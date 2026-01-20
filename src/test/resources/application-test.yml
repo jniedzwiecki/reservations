@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+  flyway:
+    enabled: true
+
+jwt:
+  secret: test-secret-key-for-integration-tests-at-least-256-bits-long-change-in-production
+  expiration: 86400000
+
+logging:
+  level:
+    com.concerthall.reservations: DEBUG
