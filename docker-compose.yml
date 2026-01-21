@@ -1,0 +1,86 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: reservations-postgres
+    environment:
+      POSTGRES_DB: reservations
+      POSTGRES_USER: reservations_user
+      POSTGRES_PASSWORD: reservations_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U reservations_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - reservations-network
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: reservations-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - reservations-network
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.11.0
+    container_name: reservations-logstash
+    volumes:
+      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+    environment:
+      - "LS_JAVA_OPTS=-Xmx256m -Xms256m"
+    ports:
+      - "5000:5000"
+    depends_on:
+      - elasticsearch
+    networks:
+      - reservations-network
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: reservations-kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    networks:
+      - reservations-network
+
+  app:
+    build: .
+    container_name: reservations-app
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/reservations
+      SPRING_DATASOURCE_USERNAME: reservations_user
+      SPRING_DATASOURCE_PASSWORD: reservations_pass
+      SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200
+      JWT_SECRET: your-secret-key-at-least-256-bits-long-change-in-production-please-use-env-variable
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_started
+    networks:
+      - reservations-network
+
+volumes:
+  postgres-data:
+  elasticsearch-data:
+
+networks:
+  reservations-network:
+    driver: bridge
