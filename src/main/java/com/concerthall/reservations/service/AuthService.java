@@ -16,6 +16,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -44,7 +47,11 @@ public class AuthService {
         log.info("New customer registered: {}", savedUser.getEmail());
 
         final UserDetails userDetails = userDetailsService.loadUserByUsername(savedUser.getEmail());
-        final String token = jwtService.generateToken(userDetails);
+
+        // Include role in JWT claims
+        final Map<String, Object> extraClaims = new HashMap<>();
+        extraClaims.put("role", savedUser.getRole().name());
+        final String token = jwtService.generateToken(extraClaims, userDetails);
 
         return AuthResponse.builder()
                 .token(token)
@@ -63,7 +70,11 @@ public class AuthService {
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         final UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
-        final String token = jwtService.generateToken(userDetails);
+
+        // Include role in JWT claims
+        final Map<String, Object> extraClaims = new HashMap<>();
+        extraClaims.put("role", user.getRole().name());
+        final String token = jwtService.generateToken(extraClaims, userDetails);
 
         log.info("User logged in: {}", user.getEmail());
 
