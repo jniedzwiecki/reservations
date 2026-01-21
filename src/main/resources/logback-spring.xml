@@ -24,7 +24,7 @@
 
     <!-- Logstash TCP Appender for Elasticsearch -->
     <appender name="LOGSTASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
-        <destination>logstash:5000</destination>
+        <destination>localhost:5000</destination>
         <encoder class="net.logstash.logback.encoder.LogstashEncoder">
             <customFields>{"app_name":"${applicationName}"}</customFields>
             <includeMdcKeyName>userId</includeMdcKeyName>

@@ -49,8 +49,8 @@ EVENT=$(curl -s -X POST "${API_URL}/api/events" \
     "price": 50.00,
     "status": "PUBLISHED"
   }')
-
-EVENT_ID=$(echo $EVENT | grep -o '"id":[0-9]*' | sed 's/"id"://')
+echo $EVENT
+EVENT_ID=$(echo "$EVENT" | grep -oE '"id":"[a-f0-9-]+"' | sed 's/"id":"//;s/"//')
 
 if [ -z "$EVENT_ID" ]; then
     echo -e "${RED}Failed to create event${NC}"
@@ -65,7 +65,7 @@ echo -e "${BLUE}[3] Registering a new customer...${NC}"
 CUSTOMER_REG=$(curl -s -X POST "${API_URL}/api/auth/register" \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "customer1@example.com",
+    "email": "customer8@example.com",
     "password": "password123"
   }')
 
@@ -94,9 +94,10 @@ TICKET=$(curl -s -X POST "${API_URL}/api/tickets/reserve" \
   -H "Authorization: Bearer ${CUSTOMER_TOKEN}" \
   -H "Content-Type: application/json" \
   -d "{
-    \"eventId\": ${EVENT_ID}
+    \"eventId\": \"${EVENT_ID}\"
   }")
-
+echo $EVENT_ID
+echo $TICKET
 TICKET_NUMBER=$(echo $TICKET | grep -o '"ticketNumber":"[^"]*' | sed 's/"ticketNumber":"//')
 
 if [ -z "$TICKET_NUMBER" ]; then
