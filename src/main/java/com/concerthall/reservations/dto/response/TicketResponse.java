@@ -7,17 +7,18 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class TicketResponse {
-    private Long id;
+    private UUID id;
     private String ticketNumber;
-    private Long userId;
+    private UUID userId;
     private String userEmail;
-    private Long eventId;
+    private UUID eventId;
     private String eventName;
     private LocalDateTime eventDateTime;
     private BigDecimal price;

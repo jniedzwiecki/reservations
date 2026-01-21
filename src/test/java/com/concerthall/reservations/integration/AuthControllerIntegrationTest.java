@@ -36,12 +36,12 @@ class AuthControllerIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void register_Success() throws Exception {
-        RegisterRequest request = RegisterRequest.builder()
+        final RegisterRequest request = RegisterRequest.builder()
                 .email("newuser@test.com")
                 .password("password123")
                 .build();
 
-        MvcResult result = mockMvc.perform(post("/api/auth/register")
+        final MvcResult result = mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -50,8 +50,8 @@ class AuthControllerIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.role").value("CUSTOMER"))
                 .andReturn();
 
-        String responseBody = result.getResponse().getContentAsString();
-        AuthResponse response = objectMapper.readValue(responseBody, AuthResponse.class);
+        final String responseBody = result.getResponse().getContentAsString();
+        final AuthResponse response = objectMapper.readValue(responseBody, AuthResponse.class);
 
         assertNotNull(response.getToken());
         assertTrue(userRepository.existsByEmail("newuser@test.com"));
@@ -60,7 +60,7 @@ class AuthControllerIntegrationTest extends BaseIntegrationTest {
     @Test
     void register_EmailAlreadyExists() throws Exception {
         // First registration
-        RegisterRequest request = RegisterRequest.builder()
+        final RegisterRequest request = RegisterRequest.builder()
                 .email("duplicate@test.com")
                 .password("password123")
                 .build();
@@ -79,7 +79,7 @@ class AuthControllerIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void register_InvalidPassword() throws Exception {
-        RegisterRequest request = RegisterRequest.builder()
+        final RegisterRequest request = RegisterRequest.builder()
                 .email("test@test.com")
                 .password("123") // Less than 5 characters
                 .build();
@@ -93,7 +93,7 @@ class AuthControllerIntegrationTest extends BaseIntegrationTest {
     @Test
     void login_Success() throws Exception {
         // Register first
-        RegisterRequest registerRequest = RegisterRequest.builder()
+        final RegisterRequest registerRequest = RegisterRequest.builder()
                 .email("login@test.com")
                 .password("password123")
                 .build();
@@ -104,7 +104,7 @@ class AuthControllerIntegrationTest extends BaseIntegrationTest {
                 .andExpect(status().isCreated());
 
         // Then login
-        LoginRequest loginRequest = LoginRequest.builder()
+        final LoginRequest loginRequest = LoginRequest.builder()
                 .email("login@test.com")
                 .password("password123")
                 .build();
@@ -119,7 +119,7 @@ class AuthControllerIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void login_InvalidCredentials() throws Exception {
-        LoginRequest loginRequest = LoginRequest.builder()
+        final LoginRequest loginRequest = LoginRequest.builder()
                 .email("nonexistent@test.com")
                 .password("wrongpassword")
                 .build();

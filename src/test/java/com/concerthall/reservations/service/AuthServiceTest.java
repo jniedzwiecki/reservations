@@ -21,6 +21,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Collections;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -64,7 +65,7 @@ class AuthServiceTest {
                 .build();
 
         testUser = User.builder()
-                .id(1L)
+                .id(UUID.randomUUID())
                 .email("test@example.com")
                 .password("encodedPassword")
                 .role(UserRole.CUSTOMER)
@@ -78,7 +79,7 @@ class AuthServiceTest {
         when(passwordEncoder.encode(registerRequest.getPassword())).thenReturn("encodedPassword");
         when(userRepository.save(any(User.class))).thenReturn(testUser);
 
-        UserDetails userDetails = org.springframework.security.core.userdetails.User.builder()
+        final UserDetails userDetails = org.springframework.security.core.userdetails.User.builder()
                 .username(testUser.getEmail())
                 .password(testUser.getPassword())
                 .authorities(Collections.singletonList(new SimpleGrantedAuthority("ROLE_CUSTOMER")))
@@ -87,7 +88,7 @@ class AuthServiceTest {
         when(userDetailsService.loadUserByUsername(testUser.getEmail())).thenReturn(userDetails);
         when(jwtService.generateToken(userDetails)).thenReturn("test-jwt-token");
 
-        AuthResponse response = authService.register(registerRequest);
+        final AuthResponse response = authService.register(registerRequest);
 
         assertNotNull(response);
         assertEquals("test-jwt-token", response.getToken());
@@ -110,7 +111,7 @@ class AuthServiceTest {
     void login_Success() {
         when(userRepository.findByEmail(loginRequest.getEmail())).thenReturn(Optional.of(testUser));
 
-        UserDetails userDetails = org.springframework.security.core.userdetails.User.builder()
+        final UserDetails userDetails = org.springframework.security.core.userdetails.User.builder()
                 .username(testUser.getEmail())
                 .password(testUser.getPassword())
                 .authorities(Collections.singletonList(new SimpleGrantedAuthority("ROLE_CUSTOMER")))
@@ -119,7 +120,7 @@ class AuthServiceTest {
         when(userDetailsService.loadUserByUsername(testUser.getEmail())).thenReturn(userDetails);
         when(jwtService.generateToken(userDetails)).thenReturn("test-jwt-token");
 
-        AuthResponse response = authService.login(loginRequest);
+        final AuthResponse response = authService.login(loginRequest);
 
         assertNotNull(response);
         assertEquals("test-jwt-token", response.getToken());

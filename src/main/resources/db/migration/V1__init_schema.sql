@@ -1,6 +1,6 @@
 -- Create users table
 CREATE TABLE users (
-    id BIGSERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     role VARCHAR(20) NOT NULL CHECK (role IN ('ADMIN', 'POWER_USER', 'CUSTOMER')),
@@ -13,7 +13,7 @@ CREATE INDEX idx_users_email ON users(email);
 
 -- Create events table
 CREATE TABLE events (
-    id BIGSERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     description TEXT,
     event_date_time TIMESTAMP NOT NULL,
@@ -29,10 +29,10 @@ CREATE INDEX idx_events_status ON events(status);
 
 -- Create tickets table
 CREATE TABLE tickets (
-    id BIGSERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY,
     ticket_number VARCHAR(100) NOT NULL UNIQUE,
-    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    event_id BIGINT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
     price DECIMAL(10,2) NOT NULL CHECK (price >= 0),
     status VARCHAR(20) NOT NULL CHECK (status IN ('RESERVED', 'CANCELLED')),
     reserved_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

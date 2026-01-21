@@ -35,12 +35,12 @@ public class TicketService {
     private final UserRepository userRepository;
 
     @Transactional
-    public TicketResponse reserveTicket(ReserveTicketRequest request, String userEmail) {
-        User user = userRepository.findByEmail(userEmail)
+    public TicketResponse reserveTicket(final ReserveTicketRequest request, final String userEmail) {
+        final User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         // 1. Lock event row to prevent race conditions
-        Event event = eventRepository.findByIdWithPessimisticLock(request.getEventId())
+        final Event event = eventRepository.findByIdWithPessimisticLock(request.getEventId())
                 .orElseThrow(() -> new ResourceNotFoundException("Event not found"));
 
         // 2. Validate event is published and in future
@@ -53,15 +53,14 @@ public class TicketService {
         }
 
         // 4. Check capacity
-        long reservedCount = ticketRepository.countByEventIdAndStatus(
+        final long reservedCount = ticketRepository.countByEventIdAndStatus(
                 event.getId(), TicketStatus.RESERVED);
         if (reservedCount >= event.getCapacity()) {
             throw new InsufficientCapacityException("Event is sold out");
         }
 
         // 5. Create and save ticket
-        Ticket ticket = createTicket(event, user);
-        ticket = ticketRepository.save(ticket);
+        final Ticket ticket = ticketRepository.save(createTicket(event, user));
 
         log.info("Ticket {} reserved for event {} by user {}",
                 ticket.getTicketNumber(), event.getId(), user.getEmail());
@@ -70,22 +69,22 @@ public class TicketService {
     }
 
     @Transactional(readOnly = true)
-    public List<TicketResponse> getMyTickets(String userEmail) {
-        User user = userRepository.findByEmail(userEmail)
+    public List<TicketResponse> getMyTickets(final String userEmail) {
+        final User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        List<Ticket> tickets = ticketRepository.findByUserIdWithEvent(user.getId());
+        final List<Ticket> tickets = ticketRepository.findByUserIdWithEvent(user.getId());
         return tickets.stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public TicketResponse getTicketById(Long id, String userEmail) {
-        Ticket ticket = ticketRepository.findById(id)
+    public TicketResponse getTicketById(final UUID id, final String userEmail) {
+        final Ticket ticket = ticketRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found"));
 
-        User user = userRepository.findByEmail(userEmail)
+        final User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         // Check if user owns this ticket or is admin/power_user
@@ -99,11 +98,11 @@ public class TicketService {
     }
 
     @Transactional
-    public void cancelTicket(Long id, String userEmail) {
-        Ticket ticket = ticketRepository.findById(id)
+    public void cancelTicket(final UUID id, final String userEmail) {
+        final Ticket ticket = ticketRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found"));
 
-        User user = userRepository.findByEmail(userEmail)
+        final User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         // Check if user owns this ticket or is admin/power_user
@@ -119,7 +118,7 @@ public class TicketService {
         log.info("Ticket {} cancelled by user {}", id, userEmail);
     }
 
-    private void validateEventBookable(Event event) {
+    private void validateEventBookable(final Event event) {
         if (event.getStatus() != EventStatus.PUBLISHED) {
             throw new InvalidEventStateException("Event is not available for booking");
         }
@@ -129,8 +128,8 @@ public class TicketService {
         }
     }
 
-    private Ticket createTicket(Event event, User user) {
-        String ticketNumber = generateTicketNumber(event);
+    private Ticket createTicket(final Event event, final User user) {
+        final String ticketNumber = generateTicketNumber(event);
 
         return Ticket.builder()
                 .ticketNumber(ticketNumber)
@@ -141,13 +140,13 @@ public class TicketService {
                 .build();
     }
 
-    private String generateTicketNumber(Event event) {
-        String eventDate = event.getEventDateTime().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        String uniqueId = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+    private String generateTicketNumber(final Event event) {
+        final String eventDate = event.getEventDateTime().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        final String uniqueId = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         return String.format("TKT-%s-%s", eventDate, uniqueId);
     }
 
-    private TicketResponse toResponse(Ticket ticket) {
+    private TicketResponse toResponse(final Ticket ticket) {
         return TicketResponse.builder()
                 .id(ticket.getId())
                 .ticketNumber(ticket.getTicketNumber())

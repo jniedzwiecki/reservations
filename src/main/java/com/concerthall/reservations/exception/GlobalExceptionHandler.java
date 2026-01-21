@@ -18,8 +18,8 @@ import java.util.Map;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleResourceNotFoundException(ResourceNotFoundException ex) {
-        ErrorResponse error = ErrorResponse.builder()
+    public ResponseEntity<ErrorResponse> handleResourceNotFoundException(final ResourceNotFoundException ex) {
+        final ErrorResponse error = ErrorResponse.builder()
                 .message(ex.getMessage())
                 .error("Resource Not Found")
                 .status(HttpStatus.NOT_FOUND.value())
@@ -29,8 +29,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(InsufficientCapacityException.class)
-    public ResponseEntity<ErrorResponse> handleInsufficientCapacityException(InsufficientCapacityException ex) {
-        ErrorResponse error = ErrorResponse.builder()
+    public ResponseEntity<ErrorResponse> handleInsufficientCapacityException(final InsufficientCapacityException ex) {
+        final ErrorResponse error = ErrorResponse.builder()
                 .message(ex.getMessage())
                 .error("Insufficient Capacity")
                 .status(HttpStatus.CONFLICT.value())
@@ -40,8 +40,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(DuplicateTicketException.class)
-    public ResponseEntity<ErrorResponse> handleDuplicateTicketException(DuplicateTicketException ex) {
-        ErrorResponse error = ErrorResponse.builder()
+    public ResponseEntity<ErrorResponse> handleDuplicateTicketException(final DuplicateTicketException ex) {
+        final ErrorResponse error = ErrorResponse.builder()
                 .message(ex.getMessage())
                 .error("Duplicate Ticket")
                 .status(HttpStatus.CONFLICT.value())
@@ -51,8 +51,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(UserNotRemovableException.class)
-    public ResponseEntity<ErrorResponse> handleUserNotRemovableException(UserNotRemovableException ex) {
-        ErrorResponse error = ErrorResponse.builder()
+    public ResponseEntity<ErrorResponse> handleUserNotRemovableException(final UserNotRemovableException ex) {
+        final ErrorResponse error = ErrorResponse.builder()
                 .message(ex.getMessage())
                 .error("User Not Removable")
                 .status(HttpStatus.FORBIDDEN.value())
@@ -62,8 +62,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(InvalidEventStateException.class)
-    public ResponseEntity<ErrorResponse> handleInvalidEventStateException(InvalidEventStateException ex) {
-        ErrorResponse error = ErrorResponse.builder()
+    public ResponseEntity<ErrorResponse> handleInvalidEventStateException(final InvalidEventStateException ex) {
+        final ErrorResponse error = ErrorResponse.builder()
                 .message(ex.getMessage())
                 .error("Invalid Event State")
                 .status(HttpStatus.BAD_REQUEST.value())
@@ -73,8 +73,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<ErrorResponse> handleBadCredentialsException(BadCredentialsException ex) {
-        ErrorResponse error = ErrorResponse.builder()
+    public ResponseEntity<ErrorResponse> handleBadCredentialsException(final BadCredentialsException ex) {
+        final ErrorResponse error = ErrorResponse.builder()
                 .message("Invalid email or password")
                 .error("Authentication Failed")
                 .status(HttpStatus.UNAUTHORIZED.value())
@@ -84,8 +84,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(UsernameNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleUsernameNotFoundException(UsernameNotFoundException ex) {
-        ErrorResponse error = ErrorResponse.builder()
+    public ResponseEntity<ErrorResponse> handleUsernameNotFoundException(final UsernameNotFoundException ex) {
+        final ErrorResponse error = ErrorResponse.builder()
                 .message(ex.getMessage())
                 .error("User Not Found")
                 .status(HttpStatus.NOT_FOUND.value())
@@ -95,15 +95,15 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, Object>> handleValidationExceptions(MethodArgumentNotValidException ex) {
-        Map<String, String> errors = new HashMap<>();
+    public ResponseEntity<Map<String, Object>> handleValidationExceptions(final MethodArgumentNotValidException ex) {
+        final Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getAllErrors().forEach(error -> {
-            String fieldName = ((FieldError) error).getField();
-            String errorMessage = error.getDefaultMessage();
+            final String fieldName = ((FieldError) error).getField();
+            final String errorMessage = error.getDefaultMessage();
             errors.put(fieldName, errorMessage);
         });
 
-        Map<String, Object> response = new HashMap<>();
+        final Map<String, Object> response = new HashMap<>();
         response.put("message", "Validation failed");
         response.put("errors", errors);
         response.put("status", HttpStatus.BAD_REQUEST.value());
@@ -113,8 +113,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException ex) {
-        ErrorResponse error = ErrorResponse.builder()
+    public ResponseEntity<ErrorResponse> handleIllegalArgumentException(final IllegalArgumentException ex) {
+        final ErrorResponse error = ErrorResponse.builder()
                 .message(ex.getMessage())
                 .error("Invalid Argument")
                 .status(HttpStatus.BAD_REQUEST.value())
@@ -124,8 +124,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleGeneralException(Exception ex) {
-        ErrorResponse error = ErrorResponse.builder()
+    public ResponseEntity<ErrorResponse> handleGeneralException(final Exception ex) {
+        final ErrorResponse error = ErrorResponse.builder()
                 .message("An unexpected error occurred")
                 .error(ex.getClass().getSimpleName())
                 .status(HttpStatus.INTERNAL_SERVER_ERROR.value())

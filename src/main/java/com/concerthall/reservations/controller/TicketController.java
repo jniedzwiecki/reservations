@@ -16,6 +16,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/tickets")
@@ -30,9 +31,9 @@ public class TicketController {
     @PreAuthorize("hasRole('CUSTOMER')")
     @Operation(summary = "Reserve a ticket for an event (Customer only)")
     public ResponseEntity<TicketResponse> reserveTicket(
-            @Valid @RequestBody ReserveTicketRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        TicketResponse ticket = ticketService.reserveTicket(request, userDetails.getUsername());
+            @Valid @RequestBody final ReserveTicketRequest request,
+            @AuthenticationPrincipal final UserDetails userDetails) {
+        final TicketResponse ticket = ticketService.reserveTicket(request, userDetails.getUsername());
         return new ResponseEntity<>(ticket, HttpStatus.CREATED);
     }
 
@@ -40,25 +41,25 @@ public class TicketController {
     @PreAuthorize("hasRole('CUSTOMER')")
     @Operation(summary = "Get current user's tickets (Customer only)")
     public ResponseEntity<List<TicketResponse>> getMyTickets(
-            @AuthenticationPrincipal UserDetails userDetails) {
-        List<TicketResponse> tickets = ticketService.getMyTickets(userDetails.getUsername());
+            @AuthenticationPrincipal final UserDetails userDetails) {
+        final List<TicketResponse> tickets = ticketService.getMyTickets(userDetails.getUsername());
         return ResponseEntity.ok(tickets);
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "Get ticket details (Owner/Admin/Power User only)")
     public ResponseEntity<TicketResponse> getTicketById(
-            @PathVariable Long id,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        TicketResponse ticket = ticketService.getTicketById(id, userDetails.getUsername());
+            @PathVariable final UUID id,
+            @AuthenticationPrincipal final UserDetails userDetails) {
+        final TicketResponse ticket = ticketService.getTicketById(id, userDetails.getUsername());
         return ResponseEntity.ok(ticket);
     }
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Cancel ticket (Owner/Admin/Power User only)")
     public ResponseEntity<Void> cancelTicket(
-            @PathVariable Long id,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @PathVariable final UUID id,
+            @AuthenticationPrincipal final UserDetails userDetails) {
         ticketService.cancelTicket(id, userDetails.getUsername());
         return ResponseEntity.noContent().build();
     }

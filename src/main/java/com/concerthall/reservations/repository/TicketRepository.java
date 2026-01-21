@@ -8,19 +8,20 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.UUID;
 
 @Repository
-public interface TicketRepository extends JpaRepository<Ticket, Long> {
+public interface TicketRepository extends JpaRepository<Ticket, UUID> {
 
-    boolean existsByUserIdAndEventIdAndStatus(Long userId, Long eventId, TicketStatus status);
+    boolean existsByUserIdAndEventIdAndStatus(UUID userId, UUID eventId, TicketStatus status);
 
-    long countByEventIdAndStatus(Long eventId, TicketStatus status);
+    long countByEventIdAndStatus(UUID eventId, TicketStatus status);
 
-    List<Ticket> findByUserId(Long userId);
+    List<Ticket> findByUserId(UUID userId);
 
     @Query("SELECT t FROM Ticket t JOIN FETCH t.event WHERE t.user.id = :userId ORDER BY t.event.eventDateTime DESC")
-    List<Ticket> findByUserIdWithEvent(@Param("userId") Long userId);
+    List<Ticket> findByUserIdWithEvent(@Param("userId") UUID userId);
 
     @Query("SELECT COUNT(t) FROM Ticket t WHERE t.event.id = :eventId AND t.status = :status")
-    long countTicketsByEventAndStatus(@Param("eventId") Long eventId, @Param("status") TicketStatus status);
+    long countTicketsByEventAndStatus(@Param("eventId") UUID eventId, @Param("status") TicketStatus status);
 }

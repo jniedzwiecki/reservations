@@ -66,7 +66,7 @@ class TicketReservationIntegrationTest extends BaseIntegrationTest {
         // Create test users
         testUsers = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
-            User user = User.builder()
+            final User user = User.builder()
                     .email("user" + i + "@test.com")
                     .password(passwordEncoder.encode("password"))
                     .role(UserRole.CUSTOMER)
@@ -78,11 +78,11 @@ class TicketReservationIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void reserveTicket_Success() {
-        ReserveTicketRequest request = ReserveTicketRequest.builder()
+        final ReserveTicketRequest request = ReserveTicketRequest.builder()
                 .eventId(testEvent.getId())
                 .build();
 
-        TicketResponse response = ticketService.reserveTicket(request, testUsers.get(0).getEmail());
+        final TicketResponse response = ticketService.reserveTicket(request, testUsers.get(0).getEmail());
 
         assertNotNull(response);
         assertEquals(testEvent.getName(), response.getEventName());
@@ -92,7 +92,7 @@ class TicketReservationIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void reserveTicket_DuplicateThrowsException() {
-        ReserveTicketRequest request = ReserveTicketRequest.builder()
+        final ReserveTicketRequest request = ReserveTicketRequest.builder()
                 .eventId(testEvent.getId())
                 .build();
 
@@ -107,18 +107,18 @@ class TicketReservationIntegrationTest extends BaseIntegrationTest {
     @Test
     void reserveTicket_ConcurrentBookingsRespectCapacity() throws InterruptedException, ExecutionException {
         // Try to book 10 tickets concurrently for an event with capacity 5
-        ExecutorService executor = Executors.newFixedThreadPool(10);
-        List<Future<TicketResponse>> futures = new ArrayList<>();
+        final ExecutorService executor = Executors.newFixedThreadPool(10);
+        final List<Future<TicketResponse>> futures = new ArrayList<>();
 
         for (int i = 0; i < 10; i++) {
             final int userIndex = i;
-            Future<TicketResponse> future = executor.submit(() -> {
+            final Future<TicketResponse> future = executor.submit(() -> {
                 try {
-                    ReserveTicketRequest request = ReserveTicketRequest.builder()
+                    final ReserveTicketRequest request = ReserveTicketRequest.builder()
                             .eventId(testEvent.getId())
                             .build();
                     return ticketService.reserveTicket(request, testUsers.get(userIndex).getEmail());
-                } catch (InsufficientCapacityException e) {
+                } catch (final InsufficientCapacityException e) {
                     return null; // Expected for some threads
                 }
             });
@@ -132,8 +132,8 @@ class TicketReservationIntegrationTest extends BaseIntegrationTest {
         int successCount = 0;
         int failureCount = 0;
 
-        for (Future<TicketResponse> future : futures) {
-            TicketResponse response = future.get();
+        for (final Future<TicketResponse> future : futures) {
+            final TicketResponse response = future.get();
             if (response != null) {
                 successCount++;
             } else {
@@ -146,13 +146,13 @@ class TicketReservationIntegrationTest extends BaseIntegrationTest {
         assertEquals(5, failureCount, "Should have exactly 5 failed reservations");
 
         // Verify database state
-        long reservedCount = ticketRepository.countByEventIdAndStatus(testEvent.getId(), TicketStatus.RESERVED);
+        final long reservedCount = ticketRepository.countByEventIdAndStatus(testEvent.getId(), TicketStatus.RESERVED);
         assertEquals(5, reservedCount, "Database should have exactly 5 reserved tickets");
     }
 
     @Test
     void reserveTicket_CapacityExceeded() {
-        ReserveTicketRequest request = ReserveTicketRequest.builder()
+        final ReserveTicketRequest request = ReserveTicketRequest.builder()
                 .eventId(testEvent.getId())
                 .build();
 
@@ -168,12 +168,12 @@ class TicketReservationIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void cancelTicket_FreesCapacity() {
-        ReserveTicketRequest request = ReserveTicketRequest.builder()
+        final ReserveTicketRequest request = ReserveTicketRequest.builder()
                 .eventId(testEvent.getId())
                 .build();
 
         // Book 5 tickets (full capacity)
-        List<TicketResponse> tickets = new ArrayList<>();
+        final List<TicketResponse> tickets = new ArrayList<>();
         for (int i = 0; i < 5; i++) {
             tickets.add(ticketService.reserveTicket(request, testUsers.get(i).getEmail()));
         }
@@ -186,7 +186,7 @@ class TicketReservationIntegrationTest extends BaseIntegrationTest {
         ticketService.cancelTicket(tickets.get(0).getId(), testUsers.get(0).getEmail());
 
         // Now the same user can book again (ticket was cancelled)
-        TicketResponse newTicket = ticketService.reserveTicket(request, testUsers.get(0).getEmail());
+        final TicketResponse newTicket = ticketService.reserveTicket(request, testUsers.get(0).getEmail());
         assertNotNull(newTicket);
     }
 }

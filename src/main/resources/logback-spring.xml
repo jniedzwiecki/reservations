@@ -3,7 +3,6 @@
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
 
     <springProperty scope="context" name="applicationName" source="spring.application.name"/>
-    <springProperty scope="context" name="elasticsearchUrl" source="spring.elasticsearch.uris" defaultValue="http://localhost:9200"/>
 
     <!-- Console Appender -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
@@ -12,9 +11,8 @@
         </encoder>
     </appender>
 
-    <!-- Elasticsearch Appender -->
-    <appender name="ELASTIC" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
-        <destination>${elasticsearchUrl}</destination>
+    <!-- JSON Console Appender for structured logging -->
+    <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="net.logstash.logback.encoder.LogstashEncoder">
             <customFields>{"app_name":"${applicationName}"}</customFields>
             <includeMdcKeyName>userId</includeMdcKeyName>
@@ -24,11 +22,16 @@
         </encoder>
     </appender>
 
-    <!-- Async Elasticsearch Appender for better performance -->
-    <appender name="ASYNC_ELASTIC" class="ch.qos.logback.classic.AsyncAppender">
-        <appender-ref ref="ELASTIC"/>
-        <queueSize>512</queueSize>
-        <discardingThreshold>0</discardingThreshold>
+    <!-- Logstash TCP Appender for Elasticsearch -->
+    <appender name="LOGSTASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+        <destination>logstash:5000</destination>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <customFields>{"app_name":"${applicationName}"}</customFields>
+            <includeMdcKeyName>userId</includeMdcKeyName>
+            <includeMdcKeyName>requestId</includeMdcKeyName>
+            <includeMdcKeyName>eventId</includeMdcKeyName>
+            <includeMdcKeyName>ticketId</includeMdcKeyName>
+        </encoder>
     </appender>
 
     <!-- Application Loggers -->
@@ -41,15 +44,22 @@
     <!-- Root Logger -->
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
-        <!-- Uncomment to enable Elasticsearch logging -->
-        <!-- <appender-ref ref="ASYNC_ELASTIC"/> -->
+        <appender-ref ref="LOGSTASH"/>
     </root>
 
     <!-- Profile-specific configuration -->
     <springProfile name="prod">
         <root level="WARN">
             <appender-ref ref="CONSOLE"/>
-            <appender-ref ref="ASYNC_ELASTIC"/>
+            <appender-ref ref="LOGSTASH"/>
+        </root>
+    </springProfile>
+
+    <!-- Enable JSON logging profile for Elasticsearch -->
+    <springProfile name="elasticsearch">
+        <root level="INFO">
+            <appender-ref ref="JSON_CONSOLE"/>
+            <appender-ref ref="LOGSTASH"/>
         </root>
     </springProfile>
 </configuration>

@@ -28,42 +28,42 @@ public class AuthService {
     private final UserDetailsService userDetailsService;
 
     @Transactional
-    public AuthResponse register(RegisterRequest request) {
+    public AuthResponse register(final RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new IllegalArgumentException("Email already exists");
         }
 
-        User user = User.builder()
+        final User user = User.builder()
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(UserRole.CUSTOMER)
                 .isRemovable(true)
                 .build();
 
-        user = userRepository.save(user);
-        log.info("New customer registered: {}", user.getEmail());
+        final User savedUser = userRepository.save(user);
+        log.info("New customer registered: {}", savedUser.getEmail());
 
-        UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
-        String token = jwtService.generateToken(userDetails);
+        final UserDetails userDetails = userDetailsService.loadUserByUsername(savedUser.getEmail());
+        final String token = jwtService.generateToken(userDetails);
 
         return AuthResponse.builder()
                 .token(token)
-                .email(user.getEmail())
-                .role(user.getRole().name())
+                .email(savedUser.getEmail())
+                .role(savedUser.getRole().name())
                 .build();
     }
 
     @Transactional(readOnly = true)
-    public AuthResponse login(LoginRequest request) {
+    public AuthResponse login(final LoginRequest request) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
 
-        User user = userRepository.findByEmail(request.getEmail())
+        final User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
-        String token = jwtService.generateToken(userDetails);
+        final UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
+        final String token = jwtService.generateToken(userDetails);
 
         log.info("User logged in: {}", user.getEmail());
 

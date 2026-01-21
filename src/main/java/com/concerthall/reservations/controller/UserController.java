@@ -16,6 +16,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/users")
@@ -30,29 +31,29 @@ public class UserController {
     @PreAuthorize("hasAnyRole('ADMIN', 'POWER_USER')")
     @Operation(summary = "Get all users (Admin/Power User only)")
     public ResponseEntity<List<UserResponse>> getAllUsers() {
-        List<UserResponse> users = userService.getAllUsers();
+        final List<UserResponse> users = userService.getAllUsers();
         return ResponseEntity.ok(users);
     }
 
     @GetMapping("/me")
     @Operation(summary = "Get current user profile")
-    public ResponseEntity<UserResponse> getCurrentUser(@AuthenticationPrincipal UserDetails userDetails) {
-        UserResponse user = userService.getUserByEmail(userDetails.getUsername());
+    public ResponseEntity<UserResponse> getCurrentUser(@AuthenticationPrincipal final UserDetails userDetails) {
+        final UserResponse user = userService.getUserByEmail(userDetails.getUsername());
         return ResponseEntity.ok(user);
     }
 
     @PostMapping("/power-user")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Create power user (Admin only)")
-    public ResponseEntity<UserResponse> createPowerUser(@Valid @RequestBody CreatePowerUserRequest request) {
-        UserResponse user = userService.createPowerUser(request);
+    public ResponseEntity<UserResponse> createPowerUser(@Valid @RequestBody final CreatePowerUserRequest request) {
+        final UserResponse user = userService.createPowerUser(request);
         return new ResponseEntity<>(user, HttpStatus.CREATED);
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Delete user if removable (Admin only)")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteUser(@PathVariable final UUID id) {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
     }

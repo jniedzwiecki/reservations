@@ -26,6 +26,10 @@ spring:
   elasticsearch:
     uris: ${SPRING_ELASTICSEARCH_URIS:http://localhost:9200}
 
+  devtools:
+    restart:
+      enabled: false
+
 server:
   port: 8080
   error:

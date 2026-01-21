@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,34 +33,34 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public UserResponse getUserByEmail(String email) {
-        User user = userRepository.findByEmail(email)
+    public UserResponse getUserByEmail(final String email) {
+        final User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         return toResponse(user);
     }
 
     @Transactional
-    public UserResponse createPowerUser(CreatePowerUserRequest request) {
+    public UserResponse createPowerUser(final CreatePowerUserRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new IllegalArgumentException("Email already exists");
         }
 
-        User user = User.builder()
+        final User user = User.builder()
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(UserRole.POWER_USER)
                 .isRemovable(true)
                 .build();
 
-        user = userRepository.save(user);
-        log.info("Power user created: {}", user.getEmail());
+        final User savedUser = userRepository.save(user);
+        log.info("Power user created: {}", savedUser.getEmail());
 
-        return toResponse(user);
+        return toResponse(savedUser);
     }
 
     @Transactional
-    public void deleteUser(Long id) {
-        User user = userRepository.findById(id)
+    public void deleteUser(final UUID id) {
+        final User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (!user.getIsRemovable()) {
@@ -70,7 +71,7 @@ public class UserService {
         log.info("User deleted: {}", user.getEmail());
     }
 
-    private UserResponse toResponse(User user) {
+    private UserResponse toResponse(final User user) {
         return UserResponse.builder()
                 .id(user.getId())
                 .email(user.getEmail())

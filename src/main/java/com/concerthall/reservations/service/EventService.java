@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,8 +30,8 @@ public class EventService {
     private final TicketRepository ticketRepository;
 
     @Transactional(readOnly = true)
-    public List<EventResponse> getAllEvents(boolean customerView) {
-        List<Event> events;
+    public List<EventResponse> getAllEvents(final boolean customerView) {
+        final List<Event> events;
         if (customerView) {
             events = eventRepository.findByStatus(EventStatus.PUBLISHED);
         } else {
@@ -43,32 +44,31 @@ public class EventService {
     }
 
     @Transactional(readOnly = true)
-    public EventResponse getEventById(Long id) {
-        Event event = eventRepository.findById(id)
+    public EventResponse getEventById(final UUID id) {
+        final Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Event not found"));
         return toResponse(event);
     }
 
     @Transactional
-    public EventResponse createEvent(CreateEventRequest request) {
-        Event event = Event.builder()
+    public EventResponse createEvent(final CreateEventRequest request) {
+        final Event event = eventRepository.save(Event.builder()
                 .name(request.getName())
                 .description(request.getDescription())
                 .eventDateTime(request.getEventDateTime())
                 .capacity(request.getCapacity())
                 .price(request.getPrice())
                 .status(request.getStatus())
-                .build();
+                .build());
 
-        event = eventRepository.save(event);
         log.info("Event created: {} with ID {}", event.getName(), event.getId());
 
         return toResponse(event);
     }
 
     @Transactional
-    public EventResponse updateEvent(Long id, UpdateEventRequest request) {
-        Event event = eventRepository.findById(id)
+    public EventResponse updateEvent(final UUID id, final UpdateEventRequest request) {
+        final Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Event not found"));
 
         if (request.getName() != null) {
@@ -90,15 +90,15 @@ public class EventService {
             event.setStatus(request.getStatus());
         }
 
-        event = eventRepository.save(event);
-        log.info("Event updated: {}", event.getId());
+        final Event savedEvent = eventRepository.save(event);
+        log.info("Event updated: {}", savedEvent.getId());
 
-        return toResponse(event);
+        return toResponse(savedEvent);
     }
 
     @Transactional
-    public void deleteEvent(Long id) {
-        Event event = eventRepository.findById(id)
+    public void deleteEvent(final UUID id) {
+        final Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Event not found"));
 
         eventRepository.delete(event);
@@ -106,26 +106,26 @@ public class EventService {
     }
 
     @Transactional
-    public EventResponse updateEventStatus(Long id, UpdateEventStatusRequest request) {
-        Event event = eventRepository.findById(id)
+    public EventResponse updateEventStatus(final UUID id, final UpdateEventStatusRequest request) {
+        final Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Event not found"));
 
         event.setStatus(request.getStatus());
-        event = eventRepository.save(event);
+        final Event savedEvent = eventRepository.save(event);
         log.info("Event {} status updated to {}", id, request.getStatus());
 
-        return toResponse(event);
+        return toResponse(savedEvent);
     }
 
     @Transactional(readOnly = true)
-    public EventSalesResponse getEventSales(Long id) {
-        Event event = eventRepository.findById(id)
+    public EventSalesResponse getEventSales(final UUID id) {
+        final Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Event not found"));
 
-        long ticketsSold = ticketRepository.countByEventIdAndStatus(id, TicketStatus.RESERVED);
-        long availableTickets = event.getCapacity() - ticketsSold;
-        BigDecimal revenue = event.getPrice().multiply(BigDecimal.valueOf(ticketsSold));
-        double occupancyRate = (ticketsSold * 100.0) / event.getCapacity();
+        final long ticketsSold = ticketRepository.countByEventIdAndStatus(id, TicketStatus.RESERVED);
+        final long availableTickets = event.getCapacity() - ticketsSold;
+        final BigDecimal revenue = event.getPrice().multiply(BigDecimal.valueOf(ticketsSold));
+        final double occupancyRate = (ticketsSold * 100.0) / event.getCapacity();
 
         return EventSalesResponse.builder()
                 .eventId(event.getId())
@@ -138,9 +138,9 @@ public class EventService {
                 .build();
     }
 
-    private EventResponse toResponse(Event event) {
-        long reservedCount = ticketRepository.countByEventIdAndStatus(event.getId(), TicketStatus.RESERVED);
-        long availableTickets = event.getCapacity() - reservedCount;
+    private EventResponse toResponse(final Event event) {
+        final long reservedCount = ticketRepository.countByEventIdAndStatus(event.getId(), TicketStatus.RESERVED);
+        final long availableTickets = event.getCapacity() - reservedCount;
 
         return EventResponse.builder()
                 .id(event.getId())

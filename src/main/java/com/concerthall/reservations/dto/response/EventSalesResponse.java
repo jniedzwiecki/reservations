@@ -6,13 +6,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class EventSalesResponse {
-    private Long eventId;
+    private UUID eventId;
     private String eventName;
     private Integer capacity;
     private Long ticketsSold;

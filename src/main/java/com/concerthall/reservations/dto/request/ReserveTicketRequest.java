@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -13,5 +15,5 @@ import lombok.NoArgsConstructor;
 public class ReserveTicketRequest {
 
     @NotNull(message = "Event ID is required")
-    private Long eventId;
+    private UUID eventId;
 }

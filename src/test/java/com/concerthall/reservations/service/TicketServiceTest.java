@@ -25,6 +25,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -52,8 +53,11 @@ class TicketServiceTest {
 
     @BeforeEach
     void setUp() {
+        final UUID userId = UUID.randomUUID();
+        final UUID eventId = UUID.randomUUID();
+
         testUser = User.builder()
-                .id(1L)
+                .id(userId)
                 .email("test@example.com")
                 .password("password")
                 .role(UserRole.CUSTOMER)
@@ -61,7 +65,7 @@ class TicketServiceTest {
                 .build();
 
         testEvent = Event.builder()
-                .id(1L)
+                .id(eventId)
                 .name("Test Concert")
                 .description("A test concert")
                 .eventDateTime(LocalDateTime.now().plusDays(7))
@@ -71,23 +75,23 @@ class TicketServiceTest {
                 .build();
 
         reserveRequest = ReserveTicketRequest.builder()
-                .eventId(1L)
+                .eventId(eventId)
                 .build();
     }
 
     @Test
     void reserveTicket_Success() {
         when(userRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
-        when(eventRepository.findByIdWithPessimisticLock(1L)).thenReturn(Optional.of(testEvent));
-        when(ticketRepository.existsByUserIdAndEventIdAndStatus(anyLong(), anyLong(), any())).thenReturn(false);
-        when(ticketRepository.countByEventIdAndStatus(anyLong(), any())).thenReturn(50L);
+        when(eventRepository.findByIdWithPessimisticLock(testEvent.getId())).thenReturn(Optional.of(testEvent));
+        when(ticketRepository.existsByUserIdAndEventIdAndStatus(any(UUID.class), any(UUID.class), any())).thenReturn(false);
+        when(ticketRepository.countByEventIdAndStatus(any(UUID.class), any())).thenReturn(50L);
         when(ticketRepository.save(any(Ticket.class))).thenAnswer(invocation -> {
-            Ticket ticket = invocation.getArgument(0);
-            ticket.setId(1L);
+            final Ticket ticket = invocation.getArgument(0);
+            ticket.setId(UUID.randomUUID());
             return ticket;
         });
 
-        TicketResponse response = ticketService.reserveTicket(reserveRequest, testUser.getEmail());
+        final TicketResponse response = ticketService.reserveTicket(reserveRequest, testUser.getEmail());
 
         assertNotNull(response);
         assertEquals(testEvent.getName(), response.getEventName());
@@ -98,7 +102,7 @@ class TicketServiceTest {
     @Test
     void reserveTicket_EventNotFound() {
         when(userRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
-        when(eventRepository.findByIdWithPessimisticLock(1L)).thenReturn(Optional.empty());
+        when(eventRepository.findByIdWithPessimisticLock(testEvent.getId())).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () ->
                 ticketService.reserveTicket(reserveRequest, testUser.getEmail()));
@@ -108,7 +112,7 @@ class TicketServiceTest {
     void reserveTicket_EventNotPublished() {
         testEvent.setStatus(EventStatus.DRAFT);
         when(userRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
-        when(eventRepository.findByIdWithPessimisticLock(1L)).thenReturn(Optional.of(testEvent));
+        when(eventRepository.findByIdWithPessimisticLock(testEvent.getId())).thenReturn(Optional.of(testEvent));
 
         assertThrows(InvalidEventStateException.class, () ->
                 ticketService.reserveTicket(reserveRequest, testUser.getEmail()));
@@ -118,7 +122,7 @@ class TicketServiceTest {
     void reserveTicket_EventInPast() {
         testEvent.setEventDateTime(LocalDateTime.now().minusDays(1));
         when(userRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
-        when(eventRepository.findByIdWithPessimisticLock(1L)).thenReturn(Optional.of(testEvent));
+        when(eventRepository.findByIdWithPessimisticLock(testEvent.getId())).thenReturn(Optional.of(testEvent));
 
         assertThrows(InvalidEventStateException.class, () ->
                 ticketService.reserveTicket(reserveRequest, testUser.getEmail()));
@@ -127,7 +131,7 @@ class TicketServiceTest {
     @Test
     void reserveTicket_DuplicateTicket() {
         when(userRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
-        when(eventRepository.findByIdWithPessimisticLock(1L)).thenReturn(Optional.of(testEvent));
+        when(eventRepository.findByIdWithPessimisticLock(testEvent.getId())).thenReturn(Optional.of(testEvent));
         when(ticketRepository.existsByUserIdAndEventIdAndStatus(
                 testUser.getId(), testEvent.getId(), TicketStatus.RESERVED)).thenReturn(true);
 
@@ -138,8 +142,8 @@ class TicketServiceTest {
     @Test
     void reserveTicket_InsufficientCapacity() {
         when(userRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
-        when(eventRepository.findByIdWithPessimisticLock(1L)).thenReturn(Optional.of(testEvent));
-        when(ticketRepository.existsByUserIdAndEventIdAndStatus(anyLong(), anyLong(), any())).thenReturn(false);
+        when(eventRepository.findByIdWithPessimisticLock(testEvent.getId())).thenReturn(Optional.of(testEvent));
+        when(ticketRepository.existsByUserIdAndEventIdAndStatus(any(UUID.class), any(UUID.class), any())).thenReturn(false);
         when(ticketRepository.countByEventIdAndStatus(testEvent.getId(), TicketStatus.RESERVED))
                 .thenReturn(100L); // Event at capacity
 
@@ -149,8 +153,9 @@ class TicketServiceTest {
 
     @Test
     void cancelTicket_Success() {
-        Ticket ticket = Ticket.builder()
-                .id(1L)
+        final UUID ticketId = UUID.randomUUID();
+        final Ticket ticket = Ticket.builder()
+                .id(ticketId)
                 .ticketNumber("TKT-20260127-ABC123")
                 .user(testUser)
                 .event(testEvent)
@@ -158,34 +163,36 @@ class TicketServiceTest {
                 .status(TicketStatus.RESERVED)
                 .build();
 
-        when(ticketRepository.findById(1L)).thenReturn(Optional.of(ticket));
+        when(ticketRepository.findById(ticketId)).thenReturn(Optional.of(ticket));
         when(userRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
         when(ticketRepository.save(any(Ticket.class))).thenReturn(ticket);
 
-        assertDoesNotThrow(() -> ticketService.cancelTicket(1L, testUser.getEmail()));
+        assertDoesNotThrow(() -> ticketService.cancelTicket(ticketId, testUser.getEmail()));
 
         verify(ticketRepository).save(argThat(t -> t.getStatus() == TicketStatus.CANCELLED));
     }
 
     @Test
     void cancelTicket_NotOwner() {
-        User otherUser = User.builder()
-                .id(2L)
+        final UUID otherUserId = UUID.randomUUID();
+        final UUID ticketId = UUID.randomUUID();
+        final User otherUser = User.builder()
+                .id(otherUserId)
                 .email("other@example.com")
                 .role(UserRole.CUSTOMER)
                 .build();
 
-        Ticket ticket = Ticket.builder()
-                .id(1L)
+        final Ticket ticket = Ticket.builder()
+                .id(ticketId)
                 .user(otherUser)
                 .event(testEvent)
                 .status(TicketStatus.RESERVED)
                 .build();
 
-        when(ticketRepository.findById(1L)).thenReturn(Optional.of(ticket));
+        when(ticketRepository.findById(ticketId)).thenReturn(Optional.of(ticket));
         when(userRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
 
         assertThrows(ResourceNotFoundException.class, () ->
-                ticketService.cancelTicket(1L, testUser.getEmail()));
+                ticketService.cancelTicket(ticketId, testUser.getEmail()));
     }
 }
