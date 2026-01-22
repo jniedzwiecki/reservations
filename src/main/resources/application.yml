@@ -40,6 +40,10 @@ jwt:
   secret: ${JWT_SECRET:your-secret-key-at-least-256-bits-long-change-in-production-please-use-env-variable}
   expiration: 86400000  # 24 hours in milliseconds
 
+service:
+  api:
+    key: ${SERVICE_API_KEY:service-secret-key}
+
 logging:
   level:
     com.concerthall.reservations: INFO

@@ -59,4 +59,7 @@ public class Ticket {
     @UpdateTimestamp
     @Column(nullable = false)
     private LocalDateTime updatedAt;
+
+    @Column(name = "payment_expires_at")
+    private LocalDateTime paymentExpiresAt;
 }

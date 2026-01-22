@@ -11,7 +11,7 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U reservations_user"]
+      test: ["CMD-SHELL", "pg_isready -U reservations_user -d reservations"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -58,6 +58,48 @@ services:
     networks:
       - reservations-network
 
+  payment-postgres:
+    image: postgres:16-alpine
+    container_name: payment-postgres
+    environment:
+      POSTGRES_DB: payment_operator
+      POSTGRES_USER: payment_user
+      POSTGRES_PASSWORD: payment_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - payment-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U payment_user -d payment_operator"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - reservations-network
+
+  payment-service:
+    build:
+      context: ../payment-operator
+      dockerfile: Dockerfile
+    container_name: payment-service
+    environment:
+      DB_HOST: payment-postgres
+      DB_PORT: 5432
+      DB_NAME: payment_operator
+      DB_USER: payment_user
+      DB_PASSWORD: payment_password
+      SERVER_PORT: 8081
+      JWT_SECRET: your-secret-key-at-least-256-bits-long-change-in-production-please-use-env-variable
+      SERVICE_API_KEY: service-secret-key-change-in-production
+      RESERVATIONS_SERVICE_URL: http://app:8080
+    ports:
+      - "8081:8081"
+    depends_on:
+      payment-postgres:
+        condition: service_healthy
+    networks:
+      - reservations-network
+
   app:
     build: .
     container_name: reservations-app
@@ -67,6 +109,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: reservations_pass
       SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200
       JWT_SECRET: your-secret-key-at-least-256-bits-long-change-in-production-please-use-env-variable
+      SERVICE_API_KEY: service-secret-key-change-in-production
     ports:
       - "8080:8080"
     depends_on:
@@ -79,6 +122,7 @@ services:
 
 volumes:
   postgres-data:
+  payment-postgres-data:
   elasticsearch-data:
 
 networks:

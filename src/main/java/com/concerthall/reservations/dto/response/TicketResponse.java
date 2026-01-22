@@ -24,4 +24,5 @@ public class TicketResponse {
     private BigDecimal price;
     private String status;
     private LocalDateTime reservedAt;
+    private LocalDateTime paymentExpiresAt;
 }

@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -24,4 +25,11 @@ public interface TicketRepository extends JpaRepository<Ticket, UUID> {
 
     @Query("SELECT COUNT(t) FROM Ticket t WHERE t.event.id = :eventId AND t.status = :status")
     long countTicketsByEventAndStatus(@Param("eventId") UUID eventId, @Param("status") TicketStatus status);
+
+    // New methods for payment flow
+    boolean existsByUserIdAndEventIdAndStatusIn(UUID userId, UUID eventId, List<TicketStatus> statuses);
+
+    long countByEventIdAndStatusIn(UUID eventId, List<TicketStatus> statuses);
+
+    List<Ticket> findByStatusAndPaymentExpiresAtBefore(TicketStatus status, LocalDateTime expirationTime);
 }
