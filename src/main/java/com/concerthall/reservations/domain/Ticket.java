@@ -19,10 +19,9 @@ import java.util.UUID;
         @Index(name = "idx_tickets_user_id", columnList = "user_id"),
         @Index(name = "idx_tickets_event_id", columnList = "event_id"),
         @Index(name = "idx_tickets_event_status", columnList = "event_id, status")
-    },
-    uniqueConstraints = {
-        @UniqueConstraint(name = "unique_user_event", columnNames = {"user_id", "event_id", "status"})
     }
+    // Note: Unique constraint is now handled by partial index unique_active_user_event
+    // which only applies to active statuses (PENDING_PAYMENT, PAID, RESERVED)
 )
 @Data
 @Builder

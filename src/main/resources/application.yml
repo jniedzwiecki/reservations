@@ -2,6 +2,11 @@ spring:
   application:
     name: concert-hall-reservations
 
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    time-zone: UTC
+
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/reservations}
     username: ${SPRING_DATASOURCE_USERNAME:reservations_user}
