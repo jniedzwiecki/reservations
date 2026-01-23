@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -47,14 +48,16 @@ public class TicketService {
         validateEventBookable(event);
 
         // 3. Check if user already has a ticket for this event
-        if (ticketRepository.existsByUserIdAndEventIdAndStatus(
-                user.getId(), event.getId(), TicketStatus.RESERVED)) {
+        if (ticketRepository.existsByUserIdAndEventIdAndStatusIn(
+                user.getId(), event.getId(),
+                Arrays.asList(TicketStatus.PENDING_PAYMENT, TicketStatus.PAID))) {
             throw new DuplicateTicketException("You already have a ticket for this event");
         }
 
         // 4. Check capacity
-        final long reservedCount = ticketRepository.countByEventIdAndStatus(
-                event.getId(), TicketStatus.RESERVED);
+        final long reservedCount = ticketRepository.countByEventIdAndStatusIn(
+                event.getId(),
+                Arrays.asList(TicketStatus.PENDING_PAYMENT, TicketStatus.PAID));
         if (reservedCount >= event.getCapacity()) {
             throw new InsufficientCapacityException("Event is sold out");
         }
@@ -136,7 +139,8 @@ public class TicketService {
                 .user(user)
                 .event(event)
                 .price(event.getPrice())
-                .status(TicketStatus.RESERVED)
+                .status(TicketStatus.PENDING_PAYMENT)
+                .paymentExpiresAt(LocalDateTime.now().plusMinutes(15))
                 .build();
     }
 
@@ -158,6 +162,7 @@ public class TicketService {
                 .price(ticket.getPrice())
                 .status(ticket.getStatus().name())
                 .reservedAt(ticket.getReservedAt())
+                .paymentExpiresAt(ticket.getPaymentExpiresAt())
                 .build();
     }
 }

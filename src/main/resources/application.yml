@@ -2,6 +2,11 @@ spring:
   application:
     name: concert-hall-reservations
 
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    time-zone: UTC
+
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/reservations}
     username: ${SPRING_DATASOURCE_USERNAME:reservations_user}
@@ -39,6 +44,10 @@ server:
 jwt:
   secret: ${JWT_SECRET:your-secret-key-at-least-256-bits-long-change-in-production-please-use-env-variable}
   expiration: 86400000  # 24 hours in milliseconds
+
+service:
+  api:
+    key: ${SERVICE_API_KEY:service-secret-key}
 
 logging:
   level:

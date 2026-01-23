@@ -3,6 +3,8 @@
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
 
     <springProperty scope="context" name="applicationName" source="spring.application.name"/>
+    <springProperty scope="context" name="logstashHost" source="logging.logstash.host" defaultValue="logstash"/>
+    <springProperty scope="context" name="logstashPort" source="logging.logstash.port" defaultValue="5000"/>
 
     <!-- Console Appender -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
@@ -24,7 +26,7 @@
 
     <!-- Logstash TCP Appender for Elasticsearch -->
     <appender name="LOGSTASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
-        <destination>localhost:5000</destination>
+        <destination>${logstashHost}:${logstashPort}</destination>
         <encoder class="net.logstash.logback.encoder.LogstashEncoder">
             <customFields>{"app_name":"${applicationName}"}</customFields>
             <includeMdcKeyName>userId</includeMdcKeyName>
