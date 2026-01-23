@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Data
 @Builder
@@ -35,4 +36,7 @@ public class CreateEventRequest {
 
     @NotNull(message = "Status is required")
     private EventStatus status;
+
+    @NotNull(message = "Venue ID is required")
+    private UUID venueId;
 }

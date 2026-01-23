@@ -27,7 +27,7 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public List<UserResponse> getAllUsers() {
-        return userRepository.findAll().stream()
+        return userRepository.findAllWithVenues().stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
@@ -72,12 +72,32 @@ public class UserService {
     }
 
     private UserResponse toResponse(final User user) {
-        return UserResponse.builder()
+        final UserResponse.UserResponseBuilder builder = UserResponse.builder()
                 .id(user.getId())
                 .email(user.getEmail())
                 .role(user.getRole().name())
                 .isRemovable(user.getIsRemovable())
-                .createdAt(user.getCreatedAt())
+                .createdAt(user.getCreatedAt());
+
+        // Include assigned venues for power users
+        if (user.getRole() == UserRole.POWER_USER && user.getAssignedVenues() != null) {
+            builder.assignedVenues(user.getAssignedVenues().stream()
+                    .map(this::toVenueResponse)
+                    .collect(Collectors.toList()));
+        }
+
+        return builder.build();
+    }
+
+    private com.concerthall.reservations.dto.response.VenueResponse toVenueResponse(final com.concerthall.reservations.domain.Venue venue) {
+        return com.concerthall.reservations.dto.response.VenueResponse.builder()
+                .id(venue.getId())
+                .name(venue.getName())
+                .address(venue.getAddress())
+                .description(venue.getDescription())
+                .capacity(venue.getCapacity())
+                .createdAt(venue.getCreatedAt())
+                .updatedAt(venue.getUpdatedAt())
                 .build();
     }
 }
