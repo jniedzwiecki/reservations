@@ -2,10 +2,7 @@ package com.concerthall.reservations.domain;
 
 import com.concerthall.reservations.domain.enums.EventStatus;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -22,6 +19,8 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString(exclude = {"venue"})
+@EqualsAndHashCode(exclude = {"venue"})
 public class Event {
 
     @Id
@@ -46,6 +45,10 @@ public class Event {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private EventStatus status;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "venue_id", nullable = false)
+    private Venue venue;
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)

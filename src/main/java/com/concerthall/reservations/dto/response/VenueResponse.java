@@ -5,7 +5,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -13,16 +12,12 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class EventResponse {
+public class VenueResponse {
     private UUID id;
     private String name;
+    private String address;
     private String description;
-    private LocalDateTime eventDateTime;
     private Integer capacity;
-    private BigDecimal price;
-    private String status;
-    private Long availableTickets;
-    private UUID venueId;
-    private String venueName;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

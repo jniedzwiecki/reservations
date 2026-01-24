@@ -61,6 +61,17 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(error, HttpStatus.FORBIDDEN);
     }
 
+    @ExceptionHandler(VenueAccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleVenueAccessDeniedException(final VenueAccessDeniedException ex) {
+        final ErrorResponse error = ErrorResponse.builder()
+                .message(ex.getMessage())
+                .error("Access Denied")
+                .status(HttpStatus.FORBIDDEN.value())
+                .timestamp(LocalDateTime.now())
+                .build();
+        return new ResponseEntity<>(error, HttpStatus.FORBIDDEN);
+    }
+
     @ExceptionHandler(InvalidEventStateException.class)
     public ResponseEntity<ErrorResponse> handleInvalidEventStateException(final InvalidEventStateException ex) {
         final ErrorResponse error = ErrorResponse.builder()

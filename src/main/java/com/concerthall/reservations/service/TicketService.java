@@ -5,6 +5,7 @@ import com.concerthall.reservations.domain.Ticket;
 import com.concerthall.reservations.domain.User;
 import com.concerthall.reservations.domain.enums.EventStatus;
 import com.concerthall.reservations.domain.enums.TicketStatus;
+import com.concerthall.reservations.domain.enums.UserRole;
 import com.concerthall.reservations.dto.request.ReserveTicketRequest;
 import com.concerthall.reservations.dto.response.TicketResponse;
 import com.concerthall.reservations.exception.DuplicateTicketException;
@@ -87,15 +88,11 @@ public class TicketService {
         final Ticket ticket = ticketRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found"));
 
-        final User user = userRepository.findByEmail(userEmail)
+        final User user = userRepository.findByEmailWithVenues(userEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        // Check if user owns this ticket or is admin/power_user
-        if (!ticket.getUser().getId().equals(user.getId()) &&
-                !user.getRole().name().equals("ADMIN") &&
-                !user.getRole().name().equals("POWER_USER")) {
-            throw new ResourceNotFoundException("Ticket not found");
-        }
+        // Validate ticket access
+        validateTicketAccess(ticket, user);
 
         return toResponse(ticket);
     }
@@ -105,15 +102,11 @@ public class TicketService {
         final Ticket ticket = ticketRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found"));
 
-        final User user = userRepository.findByEmail(userEmail)
+        final User user = userRepository.findByEmailWithVenues(userEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        // Check if user owns this ticket or is admin/power_user
-        if (!ticket.getUser().getId().equals(user.getId()) &&
-                !user.getRole().name().equals("ADMIN") &&
-                !user.getRole().name().equals("POWER_USER")) {
-            throw new ResourceNotFoundException("Ticket not found");
-        }
+        // Validate ticket access
+        validateTicketAccess(ticket, user);
 
         ticket.setStatus(TicketStatus.CANCELLED);
         ticketRepository.save(ticket);
@@ -150,6 +143,30 @@ public class TicketService {
         return String.format("TKT-%s-%s", eventDate, uniqueId);
     }
 
+    private void validateTicketAccess(final Ticket ticket, final User user) {
+        // User owns the ticket
+        if (ticket.getUser().getId().equals(user.getId())) {
+            return;
+        }
+
+        // Admin has access to all tickets
+        if (user.getRole() == UserRole.ADMIN) {
+            return;
+        }
+
+        // Power user must have access to the event's venue
+        if (user.getRole() == UserRole.POWER_USER) {
+            final boolean hasVenueAccess = user.getAssignedVenues().stream()
+                    .anyMatch(venue -> venue.getId().equals(ticket.getEvent().getVenue().getId()));
+            if (hasVenueAccess) {
+                return;
+            }
+        }
+
+        // If none of the conditions above are met, deny access
+        throw new ResourceNotFoundException("Ticket not found");
+    }
+
     private TicketResponse toResponse(final Ticket ticket) {
         return TicketResponse.builder()
                 .id(ticket.getId())
@@ -159,6 +176,8 @@ public class TicketService {
                 .eventId(ticket.getEvent().getId())
                 .eventName(ticket.getEvent().getName())
                 .eventDateTime(ticket.getEvent().getEventDateTime())
+                .venueId(ticket.getEvent().getVenue().getId())
+                .venueName(ticket.getEvent().getVenue().getName())
                 .price(ticket.getPrice())
                 .status(ticket.getStatus().name())
                 .reservedAt(ticket.getReservedAt())

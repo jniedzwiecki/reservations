@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Data
 @Builder
@@ -28,4 +29,6 @@ public class UpdateEventRequest {
     private BigDecimal price;
 
     private EventStatus status;
+
+    private UUID venueId;
 }

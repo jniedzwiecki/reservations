@@ -1,6 +1,6 @@
 package com.concerthall.reservations.domain;
 
-import com.concerthall.reservations.domain.enums.UserRole;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -12,43 +12,42 @@ import java.util.Set;
 import java.util.UUID;
 
 @Entity
-@Table(name = "users", indexes = {
-    @Index(name = "idx_users_email", columnList = "email")
+@Table(name = "venues", indexes = {
+    @Index(name = "idx_venues_name", columnList = "name")
 })
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString(exclude = {"assignedVenues"})
-@EqualsAndHashCode(exclude = {"assignedVenues"})
-public class User {
+@ToString(exclude = {"assignedUsers", "events"})
+@EqualsAndHashCode(exclude = {"assignedUsers", "events"})
+public class Venue {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @Column(nullable = false, unique = true)
-    private String email;
+    private String name;
+
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String address;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
 
     @Column(nullable = false)
-    private String password;
+    private Integer capacity;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private UserRole role;
-
-    @Column(nullable = false)
+    @JsonIgnore
+    @ManyToMany(mappedBy = "assignedVenues", fetch = FetchType.LAZY)
     @Builder.Default
-    private Boolean isRemovable = true;
+    private Set<User> assignedUsers = new HashSet<>();
 
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-        name = "user_venue_assignments",
-        joinColumns = @JoinColumn(name = "user_id"),
-        inverseJoinColumns = @JoinColumn(name = "venue_id")
-    )
+    @JsonIgnore
+    @OneToMany(mappedBy = "venue", fetch = FetchType.LAZY)
     @Builder.Default
-    private Set<Venue> assignedVenues = new HashSet<>();
+    private Set<Event> events = new HashSet<>();
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
