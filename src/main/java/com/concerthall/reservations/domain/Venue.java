@@ -1,5 +1,6 @@
 package com.concerthall.reservations.domain;
 
+import com.concerthall.reservations.domain.enums.VenueSource;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
@@ -38,6 +39,14 @@ public class Venue {
 
     @Column(nullable = false)
     private Integer capacity;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private VenueSource source = VenueSource.INTERNAL;
+
+    @Column(name = "external_id")
+    private String externalId;
 
     @JsonIgnore
     @ManyToMany(mappedBy = "assignedVenues", fetch = FetchType.LAZY)

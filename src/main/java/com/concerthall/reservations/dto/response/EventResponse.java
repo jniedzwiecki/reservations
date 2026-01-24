@@ -24,5 +24,6 @@ public class EventResponse {
     private Long availableTickets;
     private UUID venueId;
     private String venueName;
+    private String externalId;
     private LocalDateTime createdAt;
 }

@@ -182,6 +182,8 @@ public class TicketService {
                 .status(ticket.getStatus().name())
                 .reservedAt(ticket.getReservedAt())
                 .paymentExpiresAt(ticket.getPaymentExpiresAt())
+                .externalReservationId(ticket.getExternalReservationId())
+                .externalConfirmationCode(ticket.getExternalConfirmationCode())
                 .build();
     }
 }

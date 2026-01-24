@@ -1,5 +1,6 @@
 package com.concerthall.reservations.dto.response;
 
+import com.concerthall.reservations.domain.enums.VenueSource;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,6 +19,8 @@ public class VenueResponse {
     private String address;
     private String description;
     private Integer capacity;
+    private VenueSource source;
+    private String externalId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
