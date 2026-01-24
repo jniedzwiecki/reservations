@@ -176,6 +176,8 @@ public class TicketService {
                 .eventId(ticket.getEvent().getId())
                 .eventName(ticket.getEvent().getName())
                 .eventDateTime(ticket.getEvent().getEventDateTime())
+                .venueId(ticket.getEvent().getVenue().getId())
+                .venueName(ticket.getEvent().getVenue().getName())
                 .price(ticket.getPrice())
                 .status(ticket.getStatus().name())
                 .reservedAt(ticket.getReservedAt())

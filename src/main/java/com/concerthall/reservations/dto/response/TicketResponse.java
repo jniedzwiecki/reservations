@@ -21,6 +21,8 @@ public class TicketResponse {
     private UUID eventId;
     private String eventName;
     private LocalDateTime eventDateTime;
+    private UUID venueId;
+    private String venueName;
     private BigDecimal price;
     private String status;
     private LocalDateTime reservedAt;
