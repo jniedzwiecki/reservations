@@ -15,8 +15,9 @@ import com.concerthall.reservations.exception.ResourceNotFoundException;
 import com.concerthall.reservations.repository.EventRepository;
 import com.concerthall.reservations.repository.TicketRepository;
 import com.concerthall.reservations.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
+import com.concerthall.reservations.service.aggregator.TicketAggregatorService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,13 +29,25 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class TicketService {
 
     private final TicketRepository ticketRepository;
     private final EventRepository eventRepository;
     private final UserRepository userRepository;
+
+    @Autowired(required = false)
+    private TicketAggregatorService aggregatorService;
+
+    public TicketService(
+            TicketRepository ticketRepository,
+            EventRepository eventRepository,
+            UserRepository userRepository
+    ) {
+        this.ticketRepository = ticketRepository;
+        this.eventRepository = eventRepository;
+        this.userRepository = userRepository;
+    }
 
     @Transactional
     public TicketResponse reserveTicket(final ReserveTicketRequest request, final String userEmail) {
@@ -74,6 +87,12 @@ public class TicketService {
 
     @Transactional(readOnly = true)
     public List<TicketResponse> getMyTickets(final String userEmail) {
+        // Use aggregator if external provider is enabled
+        if (aggregatorService != null) {
+            return aggregatorService.getMyTickets(userEmail);
+        }
+
+        // Otherwise, use internal tickets only
         final User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
@@ -108,6 +127,14 @@ public class TicketService {
         // Validate ticket access
         validateTicketAccess(ticket, user);
 
+        // If ticket has external reservation, use aggregator to cancel
+        if (aggregatorService != null && ticket.getExternalReservationId() != null) {
+            aggregatorService.cancelExternalReservation(id, userEmail);
+            log.info("External ticket {} cancelled by user {}", id, userEmail);
+            return;
+        }
+
+        // Otherwise, cancel internal ticket
         ticket.setStatus(TicketStatus.CANCELLED);
         ticketRepository.save(ticket);
 
