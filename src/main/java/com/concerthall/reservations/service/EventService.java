@@ -17,8 +17,9 @@ import com.concerthall.reservations.repository.EventRepository;
 import com.concerthall.reservations.repository.TicketRepository;
 import com.concerthall.reservations.repository.UserRepository;
 import com.concerthall.reservations.repository.VenueRepository;
-import lombok.RequiredArgsConstructor;
+import com.concerthall.reservations.service.aggregator.EventAggregatorService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,7 +29,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class EventService {
 
@@ -37,8 +37,29 @@ public class EventService {
     private final UserRepository userRepository;
     private final VenueRepository venueRepository;
 
+    @Autowired(required = false)
+    private EventAggregatorService aggregatorService;
+
+    public EventService(
+            EventRepository eventRepository,
+            TicketRepository ticketRepository,
+            UserRepository userRepository,
+            VenueRepository venueRepository
+    ) {
+        this.eventRepository = eventRepository;
+        this.ticketRepository = ticketRepository;
+        this.userRepository = userRepository;
+        this.venueRepository = venueRepository;
+    }
+
     @Transactional(readOnly = true)
     public List<EventResponse> getAllEvents(final String userEmail, final boolean customerView) {
+        // Use aggregator if external provider is enabled
+        if (aggregatorService != null) {
+            return aggregatorService.getAllEvents(userEmail, customerView);
+        }
+
+        // Otherwise, use internal events only
         final List<Event> events;
 
         if (customerView) {
@@ -76,6 +97,16 @@ public class EventService {
 
     @Transactional(readOnly = true)
     public EventResponse getEventById(final UUID id) {
+        // Use aggregator if external provider is enabled
+        if (aggregatorService != null) {
+            final EventResponse event = aggregatorService.getEventById(id);
+            if (event != null) {
+                return event;
+            }
+            throw new ResourceNotFoundException("Event not found");
+        }
+
+        // Otherwise, use internal database only
         final Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Event not found"));
         return toResponse(event);
