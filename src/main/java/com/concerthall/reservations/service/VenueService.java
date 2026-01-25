@@ -10,8 +10,9 @@ import com.concerthall.reservations.exception.ResourceNotFoundException;
 import com.concerthall.reservations.repository.EventRepository;
 import com.concerthall.reservations.repository.UserRepository;
 import com.concerthall.reservations.repository.VenueRepository;
-import lombok.RequiredArgsConstructor;
+import com.concerthall.reservations.service.aggregator.VenueAggregatorService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,7 +21,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class VenueService {
 
@@ -28,8 +28,27 @@ public class VenueService {
     private final UserRepository userRepository;
     private final EventRepository eventRepository;
 
+    @Autowired(required = false)
+    private VenueAggregatorService aggregatorService;
+
+    public VenueService(
+            VenueRepository venueRepository,
+            UserRepository userRepository,
+            EventRepository eventRepository
+    ) {
+        this.venueRepository = venueRepository;
+        this.userRepository = userRepository;
+        this.eventRepository = eventRepository;
+    }
+
     @Transactional(readOnly = true)
     public List<VenueResponse> getAllVenues() {
+        // Use aggregator if external provider is enabled
+        if (aggregatorService != null) {
+            return aggregatorService.getAllVenues();
+        }
+
+        // Otherwise, use internal venues only
         return venueRepository.findAll().stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
@@ -58,6 +77,16 @@ public class VenueService {
 
     @Transactional(readOnly = true)
     public VenueResponse getVenueById(final UUID id) {
+        // Use aggregator if external provider is enabled
+        if (aggregatorService != null) {
+            final VenueResponse venue = aggregatorService.getVenueById(id);
+            if (venue != null) {
+                return venue;
+            }
+            throw new ResourceNotFoundException("Venue not found");
+        }
+
+        // Otherwise, use internal database only
         final Venue venue = venueRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Venue not found"));
         return toResponse(venue);

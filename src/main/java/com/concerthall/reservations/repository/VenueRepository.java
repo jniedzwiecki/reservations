@@ -13,4 +13,6 @@ public interface VenueRepository extends JpaRepository<Venue, UUID> {
     Optional<Venue> findByName(String name);
 
     boolean existsByName(String name);
+
+    Optional<Venue> findByExternalId(String externalId);
 }
