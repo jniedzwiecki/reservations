@@ -61,4 +61,10 @@ public class Ticket {
 
     @Column(name = "payment_expires_at")
     private LocalDateTime paymentExpiresAt;
+
+    @Column(name = "external_reservation_id")
+    private String externalReservationId;
+
+    @Column(name = "external_confirmation_code")
+    private String externalConfirmationCode;
 }

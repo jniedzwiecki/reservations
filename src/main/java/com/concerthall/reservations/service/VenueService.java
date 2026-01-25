@@ -167,6 +167,8 @@ public class VenueService {
                 .address(venue.getAddress())
                 .description(venue.getDescription())
                 .capacity(venue.getCapacity())
+                .source(venue.getSource())
+                .externalId(venue.getExternalId())
                 .createdAt(venue.getCreatedAt())
                 .updatedAt(venue.getUpdatedAt())
                 .build();

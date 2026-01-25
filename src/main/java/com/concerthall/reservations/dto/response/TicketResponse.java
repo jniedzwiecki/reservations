@@ -27,4 +27,6 @@ public class TicketResponse {
     private String status;
     private LocalDateTime reservedAt;
     private LocalDateTime paymentExpiresAt;
+    private String externalReservationId;
+    private String externalConfirmationCode;
 }

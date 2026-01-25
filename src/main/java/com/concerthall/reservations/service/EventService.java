@@ -246,6 +246,7 @@ public class EventService {
                 .availableTickets(availableTickets)
                 .venueId(event.getVenue().getId())
                 .venueName(event.getVenue().getName())
+                .externalId(event.getExternalId())
                 .createdAt(event.getCreatedAt())
                 .build();
     }

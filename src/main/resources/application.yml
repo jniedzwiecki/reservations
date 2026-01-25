@@ -49,6 +49,16 @@ service:
   api:
     key: ${SERVICE_API_KEY:service-secret-key}
 
+external-provider:
+  venue-api:
+    base-url: ${EXTERNAL_VENUE_API_BASE_URL:https://api.external-venues.com/v1}
+    api-key: ${EXTERNAL_VENUE_API_KEY:your-api-key-here}
+    enabled: ${EXTERNAL_VENUE_API_ENABLED:false}
+    timeout: ${EXTERNAL_VENUE_API_TIMEOUT:30}
+    retry:
+      max-attempts: 3
+      backoff-delay: 1000
+
 logging:
   level:
     com.concerthall.reservations: INFO
