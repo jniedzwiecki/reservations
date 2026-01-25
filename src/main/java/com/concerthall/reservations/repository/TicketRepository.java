@@ -32,4 +32,6 @@ public interface TicketRepository extends JpaRepository<Ticket, UUID> {
     long countByEventIdAndStatusIn(UUID eventId, List<TicketStatus> statuses);
 
     List<Ticket> findByStatusAndPaymentExpiresAtBefore(TicketStatus status, LocalDateTime expirationTime);
+
+    java.util.Optional<Ticket> findByExternalReservationId(String externalReservationId);
 }

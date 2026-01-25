@@ -25,4 +25,6 @@ public interface EventRepository extends JpaRepository<Event, UUID> {
     List<Event> findByVenueIdIn(List<UUID> venueIds);
 
     List<Event> findByVenueIdInAndStatus(List<UUID> venueIds, EventStatus status);
+
+    Optional<Event> findByExternalId(String externalId);
 }
