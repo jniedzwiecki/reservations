@@ -30,8 +30,9 @@ public class VenueAggregatorService {
 
     /**
      * Get all venues from both internal and external sources
+     * Note: Not readOnly because we create placeholders for external venues
      */
-    @Transactional(readOnly = true)
+    @Transactional
     public List<VenueResponse> getAllVenues() {
         final List<VenueResponse> internalVenues = getInternalVenues();
         final List<VenueResponse> externalVenues = getExternalVenues();
@@ -41,26 +42,33 @@ public class VenueAggregatorService {
 
     /**
      * Get venue by ID - check both internal and external sources
-     * For external venues, the UUID is deterministic based on external ID
+     * For external venues with externalId, fetch fresh data from external API
      */
     @Transactional(readOnly = true)
     public VenueResponse getVenueById(UUID id) {
-        // First try internal database
-        final Optional<Venue> internalVenue = venueRepository.findById(id);
-        if (internalVenue.isPresent()) {
-            return toResponse(internalVenue.get());
+        // Look up venue in database (includes both internal and external placeholders)
+        final Optional<Venue> venue = venueRepository.findById(id);
+        if (venue.isEmpty()) {
+            log.debug("Venue {} not found in database", id);
+            return null;
         }
 
-        // If not found internally, it might be an external venue
-        // We can't efficiently look up external venues by UUID without caching
-        // For now, return null - this will be improved with caching in future
-        log.debug("Venue {} not found in internal database", id);
-        return null;
+        // If it's an external venue (has externalId), fetch fresh data from external API
+        if (venue.get().getExternalId() != null) {
+            log.debug("Fetching fresh data for external venue {} (externalId: {})",
+                     id, venue.get().getExternalId());
+            return getVenueByExternalId(venue.get().getExternalId());
+        }
+
+        // Internal venue - return from database
+        return toResponse(venue.get());
     }
 
     /**
      * Get venue by external ID
+     * Creates placeholder if it doesn't exist
      */
+    @Transactional
     public VenueResponse getVenueByExternalId(String externalId) {
         // First check if we have it cached in database
         final Optional<Venue> cachedVenue = venueRepository.findByExternalId(externalId);
@@ -68,10 +76,11 @@ public class VenueAggregatorService {
             return toResponse(cachedVenue.get());
         }
 
-        // Fetch from external API
+        // Fetch from external API and create placeholder
         try {
             final ExternalVenueResponse externalVenue = externalClient.getVenueById(externalId);
-            return venueAdapter.toVenueResponse(externalVenue);
+            final Venue placeholder = findOrCreateVenuePlaceholder(externalVenue);
+            return toResponse(placeholder);
         } catch (ExternalProviderException e) {
             log.error("Failed to fetch external venue {}", externalId, e);
             return null;
@@ -90,18 +99,59 @@ public class VenueAggregatorService {
 
     /**
      * Fetch external venues from external API
+     * Creates placeholder records for UUID mapping
      * Returns empty list if external API fails (graceful degradation)
      */
     private List<VenueResponse> getExternalVenues() {
         try {
             final List<ExternalVenueResponse> externalVenues = externalClient.getVenues(null);
             return externalVenues.stream()
-                    .map(venueAdapter::toVenueResponse)
+                    .map(this::findOrCreateVenuePlaceholder)
+                    .map(this::toResponse)
                     .collect(Collectors.toList());
         } catch (ExternalProviderException e) {
             log.error("Failed to fetch external venues, returning only internal venues", e);
             return Collections.emptyList(); // Graceful degradation
         }
+    }
+
+    /**
+     * Find existing venue placeholder or create new one for external venue
+     * This creates a UUID -> externalId mapping in the database
+     */
+    private Venue findOrCreateVenuePlaceholder(ExternalVenueResponse externalVenue) {
+        log.info("Finding or creating placeholder for external venue: {}", externalVenue.getId());
+
+        // Check if placeholder already exists
+        final Optional<Venue> existing = venueRepository.findByExternalId(externalVenue.getId());
+        if (existing.isPresent()) {
+            log.info("Updating existing placeholder for external venue: {}", externalVenue.getId());
+            // Update placeholder with latest data
+            final Venue venue = existing.get();
+            venue.setName(externalVenue.getName());
+            venue.setAddress(externalVenue.getAddress());
+            venue.setDescription(externalVenue.getDescription());
+            venue.setCapacity(externalVenue.getCapacity());
+            final Venue saved = venueRepository.save(venue);
+            log.info("Updated venue placeholder: id={}, externalId={}", saved.getId(), saved.getExternalId());
+            return saved;
+        }
+
+        // Create new placeholder
+        log.info("Creating new placeholder for external venue: {}", externalVenue.getId());
+        final Venue newVenue = Venue.builder()
+                .name(externalVenue.getName())
+                .address(externalVenue.getAddress())
+                .description(externalVenue.getDescription())
+                .capacity(externalVenue.getCapacity())
+                .source(VenueSource.EXTERNAL_PROVIDER)
+                .externalId(externalVenue.getId())
+                .build();
+
+        final Venue saved = venueRepository.save(newVenue);
+        log.info("Created venue placeholder: id={}, externalId={}, name={}",
+                saved.getId(), saved.getExternalId(), saved.getName());
+        return saved;
     }
 
     /**

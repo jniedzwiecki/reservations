@@ -16,6 +16,7 @@ import com.concerthall.reservations.external.model.ExternalVenueResponse;
 import com.concerthall.reservations.repository.EventRepository;
 import com.concerthall.reservations.repository.TicketRepository;
 import com.concerthall.reservations.repository.UserRepository;
+import com.concerthall.reservations.repository.VenueRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -35,15 +36,18 @@ public class EventAggregatorService {
     private final EventRepository eventRepository;
     private final TicketRepository ticketRepository;
     private final UserRepository userRepository;
+    private final VenueRepository venueRepository;
     private final ExternalVenueProviderClient externalClient;
     private final ExternalEventAdapter eventAdapter;
     private final ExternalVenueAdapter venueAdapter;
+    private final VenueAggregatorService venueAggregator;
 
     /**
      * Get all events from both internal and external sources
      * Filters by user role and customer view
+     * Note: Not readOnly because we create placeholders for external events
      */
-    @Transactional(readOnly = true)
+    @Transactional
     public List<EventResponse> getAllEvents(String userEmail, boolean customerView) {
         final List<EventResponse> internalEvents = getInternalEvents(userEmail, customerView);
         final List<EventResponse> externalEvents = getExternalEvents(customerView);
@@ -53,20 +57,26 @@ public class EventAggregatorService {
 
     /**
      * Get event by ID - check both internal and external sources
+     * For external events with externalId, fetch fresh data from external API
      */
     @Transactional(readOnly = true)
     public EventResponse getEventById(UUID id) {
-        // First try internal database
-        final Optional<Event> internalEvent = eventRepository.findById(id);
-        if (internalEvent.isPresent()) {
-            return toResponse(internalEvent.get());
+        // Look up event in database (includes both internal and external placeholders)
+        final Optional<Event> event = eventRepository.findById(id);
+        if (event.isEmpty()) {
+            log.debug("Event {} not found in database", id);
+            return null;
         }
 
-        // If not found internally, it might be an external event
-        // We can't efficiently look up external events by UUID without caching
-        // For now, return null - this will be improved with caching in future
-        log.debug("Event {} not found in internal database", id);
-        return null;
+        // If it's an external event (has externalId), fetch fresh data from external API
+        if (event.get().getExternalId() != null) {
+            log.debug("Fetching fresh data for external event {} (externalId: {})",
+                     id, event.get().getExternalId());
+            return getEventByExternalId(event.get().getExternalId());
+        }
+
+        // Internal event - return from database
+        return toResponse(event.get());
     }
 
     /**
@@ -140,6 +150,7 @@ public class EventAggregatorService {
 
     /**
      * Fetch external events from external API
+     * Creates placeholder records for UUID mapping
      * Returns empty list if external API fails (graceful degradation)
      * Only returns "published" (available) external events
      */
@@ -149,26 +160,58 @@ public class EventAggregatorService {
 
             return externalEvents.stream()
                     .filter(e -> customerView ? "AVAILABLE".equals(e.getStatus()) : true)
-                    .map(externalEvent -> {
-                        // Fetch venue information for each event
-                        VenueResponse venue = null;
-                        if (externalEvent.getVenueId() != null) {
-                            try {
-                                final ExternalVenueResponse externalVenue =
-                                        externalClient.getVenueById(externalEvent.getVenueId());
-                                venue = venueAdapter.toVenueResponse(externalVenue);
-                            } catch (ExternalProviderException e) {
-                                log.warn("Failed to fetch venue {} for event {}",
-                                        externalEvent.getVenueId(), externalEvent.getId(), e);
-                            }
-                        }
-                        return eventAdapter.toEventResponse(externalEvent, venue);
-                    })
+                    .map(this::findOrCreateEventPlaceholder)
+                    .map(this::toResponse)
                     .collect(Collectors.toList());
         } catch (ExternalProviderException e) {
             log.error("Failed to fetch external events, returning only internal events", e);
             return Collections.emptyList(); // Graceful degradation
         }
+    }
+
+    /**
+     * Find existing event placeholder or create new one for external event
+     * This creates a UUID -> externalId mapping in the database
+     */
+    private Event findOrCreateEventPlaceholder(ExternalEventResponse externalEvent) {
+        // Check if placeholder already exists
+        final Optional<Event> existing = eventRepository.findByExternalId(externalEvent.getId());
+        if (existing.isPresent()) {
+            // Update placeholder with latest data
+            final Event event = existing.get();
+            event.setName(externalEvent.getName());
+            event.setDescription(externalEvent.getDescription());
+            event.setEventDateTime(externalEvent.getEventDateTime());
+            event.setCapacity(externalEvent.getCapacity());
+            event.setPrice(externalEvent.getPrice().getAmount());
+            event.setStatus(eventAdapter.mapStatus(externalEvent.getStatus()));
+            return eventRepository.save(event);
+        }
+
+        // Ensure venue placeholder exists - fetch by externalId triggers placeholder creation
+        final VenueResponse venueResponse = venueAggregator.getVenueByExternalId(externalEvent.getVenueId());
+        if (venueResponse == null) {
+            log.error("Cannot create event placeholder without venue for event: {}", externalEvent.getId());
+            throw new IllegalStateException("Venue placeholder required for event placeholder");
+        }
+
+        // Get the venue entity from database
+        final Venue venuePlaceholder = venueRepository.findById(venueResponse.getId())
+                .orElseThrow(() -> new IllegalStateException("Venue placeholder not found"));
+
+        // Create new placeholder
+        final Event newEvent = Event.builder()
+                .name(externalEvent.getName())
+                .description(externalEvent.getDescription())
+                .eventDateTime(externalEvent.getEventDateTime())
+                .capacity(externalEvent.getCapacity())
+                .price(externalEvent.getPrice().getAmount())
+                .status(eventAdapter.mapStatus(externalEvent.getStatus()))
+                .venue(venuePlaceholder)
+                .externalId(externalEvent.getId())
+                .build();
+
+        return eventRepository.save(newEvent);
     }
 
     /**

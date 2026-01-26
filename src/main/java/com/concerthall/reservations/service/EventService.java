@@ -52,9 +52,9 @@ public class EventService {
         this.venueRepository = venueRepository;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<EventResponse> getAllEvents(final String userEmail, final boolean customerView) {
-        // Use aggregator if external provider is enabled
+        // Use aggregator if external provider is enabled (may create placeholders)
         if (aggregatorService != null) {
             return aggregatorService.getAllEvents(userEmail, customerView);
         }
@@ -118,6 +118,13 @@ public class EventService {
         final Venue venue = venueRepository.findById(request.getVenueId())
                 .orElseThrow(() -> new ResourceNotFoundException("Venue not found"));
 
+        // Prevent creating events for external venues
+        if (venue.getSource() == com.concerthall.reservations.domain.enums.VenueSource.EXTERNAL_PROVIDER) {
+            throw new IllegalArgumentException(
+                    "Cannot create events for external venues. External venues and their events are managed by the external provider."
+            );
+        }
+
         // Validate venue access
         validateVenueAccess(request.getVenueId(), userEmail);
 
@@ -140,6 +147,13 @@ public class EventService {
     public EventResponse updateEvent(final UUID id, final UpdateEventRequest request, final String userEmail) {
         final Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Event not found"));
+
+        // Prevent updating external events
+        if (event.getExternalId() != null) {
+            throw new IllegalArgumentException(
+                    "Cannot update external events. External events are managed by the external provider."
+            );
+        }
 
         // Validate access to current venue
         validateVenueAccess(event.getVenue().getId(), userEmail);
@@ -181,6 +195,13 @@ public class EventService {
         final Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Event not found"));
 
+        // Prevent deleting external events
+        if (event.getExternalId() != null) {
+            throw new IllegalArgumentException(
+                    "Cannot delete external events. External events are managed by the external provider."
+            );
+        }
+
         // Validate venue access
         validateVenueAccess(event.getVenue().getId(), userEmail);
 
@@ -192,6 +213,13 @@ public class EventService {
     public EventResponse updateEventStatus(final UUID id, final UpdateEventStatusRequest request, final String userEmail) {
         final Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Event not found"));
+
+        // Prevent updating status of external events
+        if (event.getExternalId() != null) {
+            throw new IllegalArgumentException(
+                    "Cannot update status of external events. External events are managed by the external provider."
+            );
+        }
 
         // Validate venue access
         validateVenueAccess(event.getVenue().getId(), userEmail);

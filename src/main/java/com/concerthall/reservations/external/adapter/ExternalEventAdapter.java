@@ -62,7 +62,7 @@ public class ExternalEventAdapter {
      * External: AVAILABLE, SOLD_OUT, CANCELLED
      * Internal: PUBLISHED, CANCELLED, etc.
      */
-    private EventStatus mapStatus(String externalStatus) {
+    public EventStatus mapStatus(String externalStatus) {
         if (externalStatus == null) {
             return EventStatus.PUBLISHED;
         }

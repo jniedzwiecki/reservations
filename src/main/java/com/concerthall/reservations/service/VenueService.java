@@ -41,9 +41,9 @@ public class VenueService {
         this.eventRepository = eventRepository;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<VenueResponse> getAllVenues() {
-        // Use aggregator if external provider is enabled
+        // Use aggregator if external provider is enabled (may create placeholders)
         if (aggregatorService != null) {
             return aggregatorService.getAllVenues();
         }
@@ -54,7 +54,7 @@ public class VenueService {
                 .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<VenueResponse> getVenuesForUser(final String email) {
         final User user = userRepository.findByEmailWithVenues(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));

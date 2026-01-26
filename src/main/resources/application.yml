@@ -62,6 +62,7 @@ external-provider:
 logging:
   level:
     com.concerthall.reservations: INFO
+    com.concerthall.reservations.service.aggregator: INFO
     org.springframework.security: DEBUG
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
